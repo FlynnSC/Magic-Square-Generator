@@ -30,7 +30,7 @@ static int originalSum;
 
 void printSquare(int set[])
 {
-	static ofstream ofs{ "../../Magic Squares.txt" };
+	static ofstream ofs{ "Magic Squares.txt" };
 	for (int iii = 0; iii < setSize; ++iii)
 	{
 		ofs << set[conversionSet[iii]] << "\t";
