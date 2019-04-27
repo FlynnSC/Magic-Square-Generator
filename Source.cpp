@@ -15,47 +15,137 @@ void printTime(clock_t t1, clock_t t2)
 
 int fact(int n)
 {
-	for (int iii = n - 1; iii > 1; --iii)
+	for (int i = n - 1; i > 1; --i)
 	{
-		n *= iii;
+		n *= i;
 	}
 	return n;
 }
 
-static int squareCount = 0;
-static int* conversionSet; //Position conversion set for printing squares
+void printVector(vector<int>& set)
+{
+	for (int x : set)
+	{
+		cout << x << " ";
+	}
+	cout << endl;
+}
+
+void printSet(int set[], int length)
+{
+	for (int i = 0; i < length; ++i)
+	{
+		cout << set[i] << " ";
+	}
+	cout << endl;
+}
+
+static clock_t startTime;
+static unsigned long squareCount = 0;
 static int sideLength;
 static int setSize;
 static int originalSum;
+static int* convSet; // Converts between shell index and square position
+static int** permSet; // Set containing all possible permutations of size sideLength
+static int* rotSet;
+static int permSetSize;
+
+void initialiseConvSet()
+{
+	convSet = new int[(int)pow(sideLength, 2)];
+	int curr = 0;
+	for (int i = 0; i < sideLength; ++i)
+	{
+		for (int j = 0; j < sideLength - i; ++j)
+		{
+			convSet[(sideLength + 1) * i + j] = curr;
+			++curr;
+		}
+		for (int j = 1; j < sideLength - i; ++j)
+		{
+			convSet[(sideLength + 1) * i + sideLength * j] = curr;
+			++curr;
+		}
+	}
+}
+
+void permSetPerm(int set[], int length, int& permIndex)
+{
+	if (length == 1)
+	{
+		permSet[permIndex] = new int[sideLength];
+		copy(set, set + sideLength, permSet[permIndex]);
+		++permIndex;
+	}
+	else
+	{
+		permSetPerm(set, length - 1, permIndex);
+		for (int i = 0; i < length - 1; i++)
+		{
+			if (length % 2 == 1) swap(set[0], set[length - 1]);
+			else swap(set[i], set[length - 1]);			
+			permSetPerm(set, length - 1, permIndex);
+		}
+	}
+}
+
+void initialisePermSet()
+{
+	permSetSize = fact(sideLength);
+	permSet = new int*[permSetSize];
+
+	int* set = new int[sideLength];
+	for (int i = 0; i < sideLength; ++i)
+	{
+		set[i] = i;
+	}
+	int permIndex = 0;
+	permSetPerm(set, sideLength, permIndex);
+}
+
+void initialiseRotSet()
+{
+	rotSet = new int[setSize];
+	for (int i = 0; i < sideLength; ++i)
+	{
+		for (int j = 0; j < sideLength; ++j)
+		{
+			rotSet[sideLength * i + j] = sideLength * j + i;
+		}
+	}
+}
 
 void printSquare(int set[])
 {
-	static ofstream ofs{ "Magic Squares.txt" };
-	for (int iii = 0; iii < setSize; ++iii)
+	static ofstream ofs("Magic Squares.txt");
+	for (int i = 0; i < permSetSize; ++i)
 	{
-		ofs << set[conversionSet[iii]] << "\t";
-		if (((iii + 1) % sideLength) == 0) ofs << endl;
-	}
-	ofs << "***" << endl;
-	++squareCount;
-}
-
-void createConversionSet(const int& c)
-{
-	int n = pow(c, 2);
-	conversionSet = new int[n];
-	int curr = 0;
-	for (int iii = 0; iii < c; ++iii)
-	{
-		for (int jjj = 0; jjj < c - iii; ++jjj)
+		for (int j = 0; j < permSetSize; ++j)
 		{
-			conversionSet[(c + 1) * iii + jjj] = curr;
-			++curr;
-		}
-		for (int jjj = 1; jjj < c - iii; ++jjj)
-		{
-			conversionSet[(c + 1) * iii + c * jjj] = curr;
-			++curr;
+			for (int k = 0; k < sideLength; ++k)
+			{
+				int offset = permSet[i][k] * sideLength;
+				for (int l = 0; l < sideLength; ++l)
+				{
+					ofs << set[convSet[offset + permSet[j][l]]];
+					if (l != sideLength - 1) ofs << "\t";
+				}
+				ofs << "\n";
+			}
+			ofs << "\n";
+			//Rotated compositions
+			for (int k = 0; k < sideLength; ++k)
+			{
+				int offset = permSet[i][k] * sideLength;
+				for (int l = 0; l < sideLength; ++l)
+				{
+					ofs << set[convSet[rotSet[offset + permSet[j][l]]]];
+					if (l != sideLength - 1) ofs << "\t";
+				}
+				ofs << "\n";
+			}
+			ofs << "\n";
+			squareCount += 2;
 		}
 	}
 }
@@ -66,37 +156,40 @@ void perm(int set[], const int& segmentStart, const int& segmentLength, int leng
 {
 	if (length == 1)
 	{
-		//Moves onto the next segment
-		int newSegmentStart = segmentStart + segmentLength;
-		int newSegmentLength = (horizontal) ? segmentLength - 1 : segmentLength;
-		int newDepth = newSegmentStart;
-		int newExemptPos = setSize;
-		int newLevel = (horizontal) ? level : level + 1;
-		bool newHorizontal = !horizontal;
-		int newSum = originalSum;
-		if (newHorizontal)
-		{
-			for (int iii = 0; iii < newLevel; ++iii)
-			{
-				newSum -= set[conversionSet[sideLength * newLevel + iii]];
-			}
-		}
+		if (level == sideLength - 2 && !horizontal) printSquare(set);
 		else
 		{
-			for (int iii = 0; iii <= newLevel; ++iii)
+			int newSegmentStart = segmentStart + segmentLength;
+			int newSegmentLength = (horizontal) ? segmentLength - 1 : segmentLength;
+			int newDepth = newSegmentStart;
+			int newExemptPos = setSize;
+			int newLevel = (horizontal) ? level : level + 1;
+			bool newHorizontal = !horizontal;
+			int newSum = originalSum;
+			if (newHorizontal)
 			{
-				newSum -= set[conversionSet[sideLength * iii + newLevel]];
+				for (int i = 0; i < newLevel; ++i)
+				{
+					newSum -= set[convSet[sideLength * newLevel + i]];
+				}
 			}
+			else
+			{
+				for (int i = 0; i <= newLevel; ++i)
+				{
+					newSum -= set[convSet[sideLength * i + newLevel]];
+				}
+			}
+			if (newSum > 0) comb(set, newSegmentStart, newSegmentLength, newDepth, newExemptPos, newSum, newLevel, newHorizontal);
 		}
-		comb(set, newSegmentStart, newSegmentLength, newDepth, newExemptPos, newSum, newLevel, newHorizontal);
 	}
 	else
 	{
 		perm(set, segmentStart, segmentLength, length - 1, level, horizontal);
-		for (int iii = 0; iii < length - 1; iii++)
+		for (int i = 0; i < length - 1; i++)
 		{
 			if (length % 2 == 1) swap(set[segmentStart], set[segmentStart + length - 1]);
-			else swap(set[segmentStart + iii], set[segmentStart + length - 1]);
+			else swap(set[segmentStart + i], set[segmentStart + length - 1]);
 			perm(set, segmentStart, segmentLength, length - 1, level, horizontal);
 		}
 	}
@@ -104,18 +197,18 @@ void perm(int set[], const int& segmentStart, const int& segmentLength, int leng
 
 void comb(int set[], const int& segmentStart, const int& segmentLength, int depth, int exemptPos, int sum, const int& level, const bool& horizontal)
 {
-	if (level == sideLength - 1) printSquare(set); //Completed square 
-	else if (depth == segmentStart + segmentLength - 1)//Last position in segment
+	if (depth == segmentStart + segmentLength - 1)//Last position in segment
 	{
 		//Finds the element to complete the sum, then perms
-		for (int iii = depth; iii < exemptPos; ++iii)
+		for (int i = depth; i < exemptPos; ++i)
 		{
-			if (set[iii] == sum)
+			if (set[i] == sum)
 			{
-				if (iii != depth) swap(set[iii], set[depth]);
+				if (i != depth) swap(set[i], set[depth]);
 				int* tempSet = new int[setSize];
 				copy(set, set + setSize, tempSet);
 				perm(tempSet, segmentStart, segmentLength, segmentLength, level, horizontal);
+				delete[] tempSet;
 				break;
 			}
 		}
@@ -136,40 +229,128 @@ void comb(int set[], const int& segmentStart, const int& segmentLength, int dept
 	}
 }
 
+void generateShellPartials(int set[], vector<int*>& shellPartials, int depth, int exemptPos, int sum)
+{
+	if (depth == sideLength - 1)
+	{
+		for (int i = depth; i < exemptPos; ++i)
+		{
+			if (set[i] == sum)
+			{
+				if (i != depth) swap(set[i], set[depth]);
+				int* partial = new int[sideLength - 1];
+				copy(set + 1, set + sideLength, partial);
+				shellPartials.push_back(partial);
+				break;
+			}
+		}
+	}
+	else
+	{
+		if (set[depth] < sum) generateShellPartials(set, shellPartials, depth + 1, exemptPos, sum - set[depth]);
+		while (exemptPos > sideLength)
+		{
+			--exemptPos;
+			if (set[exemptPos] < sum)
+			{
+				swap(set[exemptPos], set[depth]);
+				generateShellPartials(set, shellPartials, depth + 1, exemptPos, sum - set[depth]);
+			}
+		}
+	}
+}
+
+void outerShell(int set[])
+{
+	int* tempSet = new int[setSize];
+	copy(set, set + setSize, tempSet);
+	vector<int*> shellPartials;
+	generateShellPartials(tempSet, shellPartials, 1, setSize, originalSum - 1);
+	delete[] tempSet;
+	vector<int*> shellSets;
+	for (int i = 0; i < shellPartials.size(); ++i)
+	{
+		int* partial1 = shellPartials[i];
+		for (int j = i + 1; j < shellPartials.size(); ++j)
+		{
+			int* partial2 = shellPartials[j];
+			bool collision = false;
+			for (int k = 0; k < sideLength - 1; ++k)
+			{
+				for (int l = 0; l < sideLength - 1; ++l)
+				{
+					if (partial1[k] == partial2[l])
+					{
+						collision = true;
+						break;
+					}
+				}
+				if (collision) break;
+			}
+			if (!collision)
+			{
+				tempSet = new int[setSize];
+				copy(set, set + setSize, tempSet);
+				for (int k = 0; k < sideLength - 1; ++k)
+				{
+					swap(tempSet[k + 1], tempSet[partial1[k] - 1]); // Swaps value i by accessing index i - 1
+					swap(tempSet[sideLength + k], tempSet[partial2[k] - 1]);
+				}
+				shellSets.push_back(tempSet);
+			}
+		}
+	}
+
+	int** sets = shellSets.data();
+	int setCount = shellSets.size();
+	double progressIncrement = setCount / 10.0;
+	int progressCounter = 1;
+	for (int i = 0; i < setCount; ++i)
+	{
+		int* currSet = sets[i];
+		int segmentStart = 2 * sideLength - 1;
+		comb(currSet, segmentStart, sideLength - 1, segmentStart, setSize, originalSum - currSet[sideLength], 1, true);
+		if (sideLength != 3 && (i / (double)setCount) > progressCounter / 10.0)
+		{
+			printf("%d%%\tSquare count: %d\t", progressCounter * 10, squareCount);
+			printTime(startTime, clock());
+			++progressCounter;
+		}
+	}
+	delete[] tempSet;
+}
+
 void makeSquares(int c)
 {
-	//Static variable intialisation
+	// Static variable intialisation
 	sideLength = c;
-	createConversionSet(c); //Position conversion set for printing squares
-	originalSum = (pow(c, 3) + c) / 2; //
+	originalSum = (pow(c, 3) + c) / 2;
 	setSize = pow(c, 2);
+	initialiseConvSet();
+	initialisePermSet();
+	initialiseRotSet();
 	int* set = new int[setSize];
-	for (int iii = 0; iii < setSize; ++iii)
+	//vector<int> set(setSize);
+	for (int i = 0; i < setSize; ++i)
 	{
-		set[iii] = iii + 1;
+		set[i] = i + 1;
 	}
-	int segmentStart = 0; //The index of the start of the current segment
-	int segmentLength = sideLength; //Length of the current segment
-	int exemptPos = setSize; //Denotes the exempt boundary for element swapping in comb()
-	int depth = 0; //Depth within the entire set
-	int level = 0; //The segment level/diagonal depth
-	bool horizontal = true; //Whether the segment is vertical or horizontal
-	clock_t t1, t2;
-	t1 = clock();
-	comb(set, segmentStart, segmentLength, depth, exemptPos, originalSum, level, horizontal);
-	t2 = clock();
+	startTime = clock();
+	outerShell(set);
 	cout << "Total: " << squareCount << endl;
-	//Four possible rotations
+	// Four possible rotations
 	cout << "Rotationally unique: " << squareCount / 4 << endl;
-	//Swapping the order of the rows and/or columns preserves the magic sqaure, and so
-	//there are (c!)^2 possible row and column permutations
+	// Swapping the order of the rows and/or columns preserves the magic sqaure, and so
+	// there are (c!)^2 possible row and column permutations
 	cout << "Compositionally unique: " << squareCount / pow(fact(c), 2) << endl;
-	//Permuting the rows and columns elminates half the possible rotations, hence the
-	//count is only decreased by half
+	// Permuting the rows and columns elminates half the possible rotations, hence the
+	// count is only decreased by half
 	cout << "Rotationally and Compositionally unique: " << squareCount / (pow(fact(c), 2) * 2) << endl;
-	printTime(t1, t2);
+	printTime(startTime, clock());
 	delete[] set;
-	delete[] conversionSet;
+	delete[] convSet;
+	for (int i = 0; i < permSetSize; ++i) delete[] permSet[i];
+	delete[] permSet;
 }
 
 int main()
