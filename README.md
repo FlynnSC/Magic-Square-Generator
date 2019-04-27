@@ -28,4 +28,4 @@ finding a combination of 4 elements from the total set of [1, 16] that sum to 34
 
 This process of completing one segment before moving onto the next operates recursively, with each segment tested with every possible combination of available elements (those not used by previous segments) for validity, each valid combination permuted, and each permutation transitioning to the next segment to complete the same combination and permutation process.
 
-Currently, on my machine, finding all 3 * 3 magic squares takes 0:00.008 while 4 * 4 takes roughly 1:15.517, but I have improvements planned that will speed up 4 * 4 generation to be almost as fast as 3 * 3 currently is.
+//TODO further explanation of changes
