@@ -1,17 +1,15 @@
-# Magic-Squares-Project
+# Magic Hypercube Generator
+*The product of roughly 6 years of very intermittent iteration and improvement*
+
 ## Background
-A magic square, somewhat similar to sudoku, is a matrix of integers in which all rows and columns of the matrix add up to the same number. A traditional magic square (the type that this algorithm focusses on) of a size n * n will contain the digits 1 to n^2, and each row will add up to (n^3 + n) / 2. eg. 
+A magic square, somewhat similar to sudoku, is a matrix of integers in which all rows and columns of the matrix add up to the same value. A magic square of a size n * n will contain the digits 1 to n^2, and each row will add up to (n^3 + n) / 2. eg. 
 
-1 | 5 | 9	
+2 | 7 | 6 
 --|---|--
-6 | 7 | 2	
-8 | 3 |	4
+9 | 5 | 1
+4 | 3 |	8
 
-This algorithm is designed to take some input integer n, generate all possible magic squares of a size n * n and save them to a text file. I originally envisioned idea of a "magic square generator" back in year 9, around the same time I started learning C++, using what I learnt to implement a crude brute-force approach and lay the groundwork for optimisations. I came back to the project several times throughout year 10 and 11 (usually during the holidays) to make improvements as my knowledge grew, reaching a point in year 11 where I thought I had made it as efficient as I could with expertise at the time.
-
-Having lost the code a while ago in the transition between laptops (thought I was done with the project), I decided to revive the project earlier this year and start from scratch with a deeper knowledge of software design. It is currently a work in progress that I have had to put on hold in order to focus on assignments for a little while, but it has almost reached the level of efficiency that I had achieved in year 11. 
-
-I quite a few plans for further optimisation: algorithmic improvements that will reduce runtime by several orders of magnitude, as well as plans for multithreading and potentially even running the algorithm on the GPU using CUDA. If sufficient efficiency is achieved, I also want to expand the algorithm to generate magic cubes of a size n * n * n, and then eventually d dimensional magic hyper cubes of a size n^d.
+Now technically, squares whose rows and columns add to same the value are actually "semi-magic", and to be truly magic their diagonals must also add the same value. This means that magic squares are a subset of semi magic squares, an "edge-case" if you will, and so because I find the computational problem of generating all semi-magic squares to be more general and interesting, this is what the program actually does. Knowing that, for brevity, I will be referring to semi-magic squares as magic squares for the rest of this document.
 
 ## Implementation
 (Following explanation is in reference to magic squares of size 4 * 4)
